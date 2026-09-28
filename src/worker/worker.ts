@@ -16,7 +16,6 @@ import { markFailedOrDead } from "./complete";
 import { computeBackoffMs } from "./backoff";
 import { logEvent } from "./logger";
 import { handlers } from "./handlers";
-
 import { Job } from "../types";
 
 let inFlight = 0;
@@ -79,6 +78,15 @@ async function startLoop(): Promise<void> {
           break; // No job available right now
         }
 
+        if (isStopping) {
+          // Worker received shutdown signal while query was executing; release job back to pending
+          await pool.query(
+            "UPDATE jobs SET status = 'pending', attempts = attempts - 1, started_at = NULL WHERE id = $1 AND status = 'processing'",
+            [job.id]
+          );
+          break;
+        }
+
         inFlight++;
         logEvent("job_claimed", { jobId: job.id, attempts: job.attempts, inFlight });
 
@@ -87,7 +95,9 @@ async function startLoop(): Promise<void> {
           console.error("Unexpected error in processJob:", err);
         });
       } catch (err) {
-        console.error("Error claiming job:", err);
+        if (!isStopping) {
+          console.error("Error claiming job:", err);
+        }
         break;
       }
     }
@@ -107,9 +117,9 @@ async function shutdown(signal: string): Promise<void> {
 
   logEvent("worker_stopping", { signal, inFlight });
 
-  // Wait for all currently processing jobs to complete
+  // Wait for all currently processing jobs to complete before closing pool
   while (inFlight > 0) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
   await pool.end();
