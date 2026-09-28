@@ -1,6 +1,6 @@
 // src/worker/worker.ts
 // Main worker process entry point and polling loop.
-// Claims jobs, executes handlers up to the concurrency limit, handles backoff, and shuts down gracefully.
+// Claims jobs, executes handlers up to the concurrency limit, handles backoff, sweeps stuck jobs, and shuts down gracefully.
 
 import { pool } from "../db";
 import {
@@ -10,16 +10,19 @@ import {
   emailMode,
   backoffBaseMs,
   backoffJitterMs,
+  sweepIntervalMs,
 } from "../config";
 import { claimJob } from "./claim";
 import { markFailedOrDead } from "./complete";
 import { computeBackoffMs } from "./backoff";
 import { logEvent } from "./logger";
 import { handlers } from "./handlers";
+import { recoverStuckJobs } from "./sweep";
 import { Job } from "../types";
 
 let inFlight = 0;
 let isStopping = false;
+let sweepTimer: NodeJS.Timeout | null = null;
 
 /**
  * Executes a single job through its registered handler.
@@ -59,6 +62,7 @@ async function processJob(job: Job): Promise<void> {
 
 /**
  * Main polling loop. Claims jobs while in-flight count is under concurrency limit.
+ * Also starts periodic sweep for stuck processing jobs.
  */
 async function startLoop(): Promise<void> {
   logEvent("worker_started", {
@@ -68,7 +72,15 @@ async function startLoop(): Promise<void> {
     emailMode,
     backoffBaseMs,
     backoffJitterMs,
+    sweepIntervalMs,
   });
+
+  // Start periodic sweep for stuck jobs
+  sweepTimer = setInterval(() => {
+    recoverStuckJobs().catch((err) => {
+      console.error("Error running stuck job sweep:", err);
+    });
+  }, sweepIntervalMs);
 
   while (!isStopping) {
     while (!isStopping && inFlight < concurrency) {
@@ -114,6 +126,11 @@ async function startLoop(): Promise<void> {
 async function shutdown(signal: string): Promise<void> {
   if (isStopping) return;
   isStopping = true;
+
+  if (sweepTimer) {
+    clearInterval(sweepTimer);
+    sweepTimer = null;
+  }
 
   logEvent("worker_stopping", { signal, inFlight });
 
