@@ -381,9 +381,19 @@ Each decision lists the option that was considered and why it lost.
 
 ## Break-it results
 
-| Test | What was done | Result | Evidence link |
-| --- | --- | --- | --- |
-| 1. 50 jobs & concurrency cap | Enqueued 50 jobs with worker cap=3 | TO FILL | [evidence/test1.png](evidence/test1.png) |
+### 1. 50 jobs & concurrency cap, Enqueued 50 jobs with worker cap=3 (Pictures)
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 47 12" src="https://github.com/user-attachments/assets/a94ab138-ade1-47af-bc60-a7de0a67ec69" />
+
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 48 15" src="https://github.com/user-attachments/assets/47d13b66-a42e-47ce-bc6d-2ccd8865fcbf" />
+
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 48 28" src="https://github.com/user-attachments/assets/e62f5321-3dcf-471c-9c64-c5250c87a90f" />
+
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 48 36" src="https://github.com/user-attachments/assets/2d10003b-3f00-4225-bf20-8f45a29bb996" />
+
+
+
+
+
 | 2. 100% failure to dead | Ran worker with failure rate=1.0 | TO FILL | [evidence/test2.png](evidence/test2.png) |
 | 3. Kill mid-job & recovery | Killed worker mid-execution (SIGKILL) | TO FILL | [evidence/test3.png](evidence/test3.png) |
 | 4. Same idempotency key twice | Sent identical request payload twice | TO FILL | [evidence/test4.png](evidence/test4.png) |
