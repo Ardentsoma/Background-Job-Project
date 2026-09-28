@@ -381,14 +381,9 @@ Each decision lists the option that was considered and why it lost.
 
 ## Break-it results
 
-### 1. 50 jobs & concurrency cap, Enqueued 50 jobs with worker cap=3 (Pictures)
-<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 47 12" src="https://github.com/user-attachments/assets/a94ab138-ade1-47af-bc60-a7de0a67ec69" />
+### Test 1. 50 jobs & concurrency cap, Enqueued 50 jobs with worker cap=3 (Pictures)
 
-<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 48 15" src="https://github.com/user-attachments/assets/47d13b66-a42e-47ce-bc6d-2ccd8865fcbf" />
-
-<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 48 28" src="https://github.com/user-attachments/assets/e62f5321-3dcf-471c-9c64-c5250c87a90f" />
-
-<img width="1440" height="900" alt="Screenshot 2026-09-28 at 13 48 36" src="https://github.com/user-attachments/assets/2d10003b-3f00-4225-bf20-8f45a29bb996" />
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 14 05 25" src="https://github.com/user-attachments/assets/98373a77-ac6d-48fd-bd64-3d020a92f255" />
 
 
 
