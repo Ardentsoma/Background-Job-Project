@@ -1,15 +1,20 @@
 // src/api/server.ts
 // Express API entry point.
-// Mounts routes for health checks and job management.
+// Mounts static files, health check, job enqueue/status routes, and dead jobs routes.
 
 import express, { Request, Response, NextFunction } from "express";
+import path from "path";
 import { pool } from "../db";
 import { port } from "../config";
 import { jobsRouter } from "./routes/jobs";
+import { deadJobsRouter } from "./routes/deadJobs";
 
 const app = express();
 
 app.use(express.json());
+
+// Serve static frontend files from public/ directory
+app.use(express.static(path.join(__dirname, "..", "..", "public")));
 
 // Handle malformed JSON body errors from express.json() parser
 app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
@@ -39,6 +44,9 @@ app.get("/health", async (_req: Request, res: Response, next: NextFunction) => {
 
 /** Mount job management endpoints */
 app.use("/api/jobs", jobsRouter);
+
+/** Mount dead letter queue endpoints */
+app.use("/api/dead-jobs", deadJobsRouter);
 
 // ── Error handling middleware ────────────────────────────────────────
 
