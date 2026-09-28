@@ -1,0 +1,189 @@
+<!-- public/index.html -->
+<!-- Job Trigger and Live Status View -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Job Trigger & Status</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Background Job Trigger & Status</h1>
+    <nav>
+      <a href="/index.html">Trigger & Status</a>
+      <a href="/dead.html">Dead Letter Queue</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <h2>Enqueue Ticket Confirmation</h2>
+      <form id="jobForm">
+        <div class="form-group">
+          <label for="to">Recipient Email:</label>
+          <input type="email" id="to" name="to" required value="delivered@resend.dev">
+        </div>
+        <div class="form-group">
+          <label for="recipientName">Recipient Name:</label>
+          <input type="text" id="recipientName" name="recipientName" required value="Alice Smith">
+        </div>
+        <div class="form-group">
+          <label for="eventTitle">Event Title:</label>
+          <input type="text" id="eventTitle" name="eventTitle" required value="Tech Conference 2026">
+        </div>
+        <div class="form-group">
+          <label for="ticketId">Ticket ID:</label>
+          <input type="text" id="ticketId" name="ticketId" required value="TICK-101">
+        </div>
+        <button type="submit" id="submitBtn">Enqueue Job</button>
+      </form>
+    </section>
+
+    <section id="statusSection" style="display: none;">
+      <h2>Job Status</h2>
+      <div class="status-card">
+        <p><strong>Job ID:</strong> <span id="jobIdDisplay"></span></p>
+        <p><strong>Idempotency Note:</strong> <span id="duplicateDisplay"></span></p>
+        <p><strong>Status:</strong> <span id="statusBadge" class="status-badge"></span></p>
+        <p><strong>Attempts:</strong> <span id="attemptsDisplay"></span> / <span id="maxAttemptsDisplay"></span></p>
+        <p id="retryInfoGroup" style="display: none;"><strong>Retry Info:</strong> <span id="retryInfoDisplay"></span></p>
+        <p id="errorGroup" style="display: none;"><strong>Last Error:</strong> <span id="lastErrorDisplay"></span></p>
+      </div>
+    </section>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+  </main>
+
+  <script>
+    const jobForm = document.getElementById('jobForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusSection = document.getElementById('statusSection');
+    const jobIdDisplay = document.getElementById('jobIdDisplay');
+    const duplicateDisplay = document.getElementById('duplicateDisplay');
+    const statusBadge = document.getElementById('statusBadge');
+    const attemptsDisplay = document.getElementById('attemptsDisplay');
+    const maxAttemptsDisplay = document.getElementById('maxAttemptsDisplay');
+    const retryInfoGroup = document.getElementById('retryInfoGroup');
+    const retryInfoDisplay = document.getElementById('retryInfoDisplay');
+    const errorGroup = document.getElementById('errorGroup');
+    const lastErrorDisplay = document.getElementById('lastErrorDisplay');
+    const errorMessage = document.getElementById('errorMessage');
+
+    let pollInterval = null;
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.style.display = 'block';
+    }
+
+    function clearError() {
+      errorMessage.textContent = '';
+      errorMessage.style.display = 'none';
+    }
+
+    jobForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+
+      const to = document.getElementById('to').value.trim();
+      const recipientName = document.getElementById('recipientName').value.trim();
+      const eventTitle = document.getElementById('eventTitle').value.trim();
+      const ticketId = document.getElementById('ticketId').value.trim();
+
+      const idempotencyKey = `ticket-confirmation/${ticketId}`;
+      const payload = {
+        type: 'send_ticket_confirmation',
+        payload: { to, recipientName, eventTitle, ticketId }
+      };
+
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': idempotencyKey
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await response.json();
+
+        if (!response.ok) {
+          const msg = json.error ? `${json.error.code}: ${json.error.message}` : `HTTP ${response.status} Error`;
+          showError(msg);
+          return;
+        }
+
+        const job = json.data;
+        const isDuplicate = json.meta && json.meta.duplicate;
+
+        jobIdDisplay.textContent = job.id;
+        duplicateDisplay.textContent = isDuplicate ? 'Existing job (duplicate key)' : 'New job created';
+
+        statusSection.style.display = 'block';
+
+        // Start polling job status
+        pollJobStatus(job.id);
+        pollInterval = setInterval(() => pollJobStatus(job.id), 1000);
+      } catch (err) {
+        showError(`Network error: ${err.message}`);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    async function pollJobStatus(id) {
+      try {
+        const response = await fetch(`/api/jobs/${id}`);
+        const json = await response.json();
+
+        if (!response.ok) {
+          const msg = json.error ? `${json.error.code}: ${json.error.message}` : `HTTP ${response.status} Error`;
+          showError(msg);
+          if (pollInterval) clearInterval(pollInterval);
+          return;
+        }
+
+        const job = json.data;
+
+        statusBadge.textContent = job.status;
+        statusBadge.className = `status-badge status-${job.status}`;
+        attemptsDisplay.textContent = job.attempts;
+        maxAttemptsDisplay.textContent = job.maxAttempts;
+
+        if (job.lastError) {
+          lastErrorDisplay.textContent = job.lastError;
+          errorGroup.style.display = 'block';
+        } else {
+          errorGroup.style.display = 'none';
+        }
+
+        if (job.status === 'failed') {
+          retryInfoDisplay.textContent = `Retrying at ${job.runAt}`;
+          retryInfoGroup.style.display = 'block';
+        } else {
+          retryInfoGroup.style.display = 'none';
+        }
+
+        if (job.status === 'succeeded' || job.status === 'dead') {
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+        }
+      } catch (err) {
+        showError(`Polling error: ${err.message}`);
+      }
+    }
+  </script>
+</body>
+</html>

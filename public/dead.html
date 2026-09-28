@@ -1,0 +1,154 @@
+<!-- public/dead.html -->
+<!-- Dead Letter Queue View and Manual Retry -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dead Letter Queue</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Dead Letter Queue</h1>
+    <nav>
+      <a href="/index.html">Trigger & Status</a>
+      <a href="/dead.html">Dead Letter Queue</a>
+    </nav>
+  </header>
+
+  <main>
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <section id="deadJobsSection">
+      <table id="deadJobsTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Job ID</th>
+            <th>Payload</th>
+            <th>Attempts</th>
+            <th>Last Error</th>
+            <th>Finished At</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="deadJobsBody"></tbody>
+      </table>
+
+      <div id="emptyState" class="empty-state" style="display: none;">
+        No dead jobs.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const deadJobsTable = document.getElementById('deadJobsTable');
+    const deadJobsBody = document.getElementById('deadJobsBody');
+    const emptyState = document.getElementById('emptyState');
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.style.display = 'block';
+    }
+
+    function clearError() {
+      errorMessage.textContent = '';
+      errorMessage.style.display = 'none';
+    }
+
+    async function loadDeadJobs() {
+      clearError();
+      try {
+        const response = await fetch('/api/dead-jobs');
+        const json = await response.json();
+
+        if (!response.ok) {
+          const msg = json.error ? `${json.error.code}: ${json.error.message}` : `HTTP ${response.status} Error`;
+          showError(msg);
+          return;
+        }
+
+        const jobs = json.data;
+        deadJobsBody.textContent = ''; // clear table rows safely
+
+        if (jobs.length === 0) {
+          deadJobsTable.style.display = 'none';
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+        deadJobsTable.style.display = 'table';
+
+        for (const job of jobs) {
+          const tr = document.createElement('tr');
+
+          const tdId = document.createElement('td');
+          tdId.textContent = job.id;
+          tr.appendChild(tdId);
+
+          const tdPayload = document.createElement('td');
+          tdPayload.textContent = JSON.stringify(job.payload);
+          tr.appendChild(tdPayload);
+
+          const tdAttempts = document.createElement('td');
+          tdAttempts.textContent = `${job.attempts} / ${job.maxAttempts}`;
+          tr.appendChild(tdAttempts);
+
+          const tdError = document.createElement('td');
+          tdError.textContent = job.lastError || 'N/A';
+          tr.appendChild(tdError);
+
+          const tdFinished = document.createElement('td');
+          tdFinished.textContent = job.finishedAt ? new Date(job.finishedAt).toLocaleString() : 'N/A';
+          tr.appendChild(tdFinished);
+
+          const tdAction = document.createElement('td');
+          const retryBtn = document.createElement('button');
+          retryBtn.textContent = 'Retry';
+          retryBtn.addEventListener('click', () => retryJob(job.id, retryBtn));
+          tdAction.appendChild(retryBtn);
+          tr.appendChild(tdAction);
+
+          deadJobsBody.appendChild(tr);
+        }
+      } catch (err) {
+        showError(`Failed to load dead jobs: ${err.message}`);
+      }
+    }
+
+    async function retryJob(id, btn) {
+      clearError();
+      btn.disabled = true;
+      btn.textContent = 'Retrying...';
+
+      try {
+        const response = await fetch(`/api/dead-jobs/${id}/retry`, {
+          method: 'POST'
+        });
+
+        const json = await response.json();
+
+        if (!response.ok) {
+          const msg = json.error ? `${json.error.code}: ${json.error.message}` : `HTTP ${response.status} Error`;
+          showError(msg);
+          btn.disabled = false;
+          btn.textContent = 'Retry';
+          return;
+        }
+
+        // Successfully retried, reload table
+        await loadDeadJobs();
+      } catch (err) {
+        showError(`Retry request failed: ${err.message}`);
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+      }
+    }
+
+    // Initial load
+    loadDeadJobs();
+  </script>
+</body>
+</html>
