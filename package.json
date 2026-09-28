@@ -9,7 +9,13 @@
     "migrate": "tsx src/scripts/migrate.ts",
     "build": "tsc",
     "start:api": "node dist/api/server.js",
-    "start:worker": "node dist/worker/worker.js"
+    "start:worker": "node dist/worker/worker.js",
+    "enqueue:many": "tsx scripts/break-it/enqueue_many.ts",
+    "snapshot": "tsx scripts/break-it/snapshot.ts",
+    "attempts": "tsx scripts/break-it/attempts.ts",
+    "check:concurrency": "tsx scripts/break-it/check_concurrency.ts",
+    "check:claims": "tsx scripts/break-it/check_claims.ts",
+    "recheck:double-run": "tsx scripts/break-it/recheck_double_run.ts"
   },
   "keywords": [],
   "author": "",
