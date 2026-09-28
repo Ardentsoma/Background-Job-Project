@@ -385,11 +385,12 @@ Each decision lists the option that was considered and why it lost.
 
 <img width="1440" height="900" alt="Screenshot 2026-09-28 at 14 05 25" src="https://github.com/user-attachments/assets/98373a77-ac6d-48fd-bd64-3d020a92f255" />
 
+### Test 1.100% failure to dead, Ran worker with failure rate=1.0 
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 14 40 34" src="https://github.com/user-attachments/assets/6b4f8f31-c074-4263-9b18-fc018b6ec6a3" />
+
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 14 40 28" src="https://github.com/user-attachments/assets/e966779e-29a8-4f9a-9640-bf7fe816a303" />
 
 
-
-
-| 2. 100% failure to dead | Ran worker with failure rate=1.0 | TO FILL | [evidence/test2.png](evidence/test2.png) |
 | 3. Kill mid-job & recovery | Killed worker mid-execution (SIGKILL) | TO FILL | [evidence/test3.png](evidence/test3.png) |
 | 4. Same idempotency key twice | Sent identical request payload twice | TO FILL | [evidence/test4.png](evidence/test4.png) |
 | 5. Two workers at once | Ran two workers concurrently on 30 jobs | TO FILL | [evidence/test5.png](evidence/test5.png) |
