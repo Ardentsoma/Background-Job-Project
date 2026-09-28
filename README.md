@@ -397,8 +397,10 @@ Each decision lists the option that was considered and why it lost.
 
 <img width="1440" height="900" alt="Screenshot 2026-09-28 at 15 59 10" src="https://github.com/user-attachments/assets/f9c6e7bd-6067-4dab-afff-799c50872526" />
 
+### Test 4. Two workers at once, an two workers concurrently on 30 jobs 
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 22 39 58" src="https://github.com/user-attachments/assets/430583b4-b045-4f1e-a7a1-5c99d9f00944" />
 
-| 4. Same idempotency key twice | Sent identical request payload twice | TO FILL | [evidence/test4.png](evidence/test4.png) |
-| 5. Two workers at once | Ran two workers concurrently on 30 jobs | TO FILL | [evidence/test5.png](evidence/test5.png) |
-| 6. Double run output | Verified email delivery row count | TO FILL | [evidence/test6.png](evidence/test6.png) |
-| 7. Crash after send | Process exited immediately post-send | TO FILL | [evidence/test7.png](evidence/test7.png) |# Background-Job-Project
+### Test 5. Double run output, verified email delivery row count
+
+<img width="1440" height="900" alt="Screenshot 2026-09-28 at 22 50 44" src="https://github.com/user-attachments/assets/8db82faa-7b30-405e-851d-495ea4f0b4c1" />
+
